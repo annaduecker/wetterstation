@@ -7,8 +7,10 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -33,6 +35,16 @@ import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,6 +53,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
@@ -51,8 +64,9 @@ public class MainActivity extends AppCompatActivity {
     public static final String FOURTH_COLUMN = "Fourth";
     private LineChart chart;
     private BarChart bChart;
-    private ArrayList<HashMap> list;
-    private  ListView lview;
+    private  static ArrayList<HashMap> list;
+    public  ListView lview;
+    private GraphView graph;
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -62,16 +76,19 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.navigation_home:
                     chart.setVisibility(View.INVISIBLE);
                     bChart.setVisibility(View.INVISIBLE);
+                    graph.setVisibility(View.INVISIBLE);
                     lview.setVisibility(View.VISIBLE);
                     return true;
                 case R.id.navigation_dashboard:
                     chart.setVisibility(View.VISIBLE);
                     bChart.setVisibility(View.INVISIBLE);
+                    graph.setVisibility(View.INVISIBLE);
                     lview.setVisibility(View.INVISIBLE);
                     return true;
                 case R.id.navigation_notifications:
                     bChart.setVisibility(View.VISIBLE);
                     chart.setVisibility(View.INVISIBLE);
+                    graph.setVisibility(View.INVISIBLE);
                     lview.setVisibility(View.INVISIBLE);
                     return true;
             }
@@ -84,6 +101,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        String[] params = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
+        HttpGetRequestClient httpGetRequestClient= new HttpGetRequestClient();
+        httpGetRequestClient.setMain(this);
+        httpGetRequestClient.execute(params);
+
+
         Calendar calendar = Calendar.getInstance();
         Date d1 = calendar.getTime();
         calendar.add(Calendar.DATE, 1);
@@ -91,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         calendar.add(Calendar.DATE, 1);
         Date d3 = calendar.getTime();
 
-        GraphView graph = (GraphView) findViewById(R.id.graph);
+        graph = (GraphView) findViewById(R.id.graph);
 
 // you can directly pass Date objects to DataPoint-Constructor
 // this will convert the Date to double via Date#getTime()
@@ -118,10 +141,10 @@ public class MainActivity extends AppCompatActivity {
 // as we use dates as labels, the human rounding to nice readable numbers
 // is not necessary
         graph.getGridLabelRenderer().setHumanRounding(false);
-         lview = (ListView) findViewById(R.id.listview);
-        populateList();
-        listviewAdapter adapter = new listviewAdapter(this, list);
-        lview.setAdapter(adapter);
+
+
+        //listviewAdapter adapter = new listviewAdapter(this, list);
+        //lview.setAdapter(adapter);
 
 
 
@@ -276,37 +299,23 @@ public class MainActivity extends AppCompatActivity {
         chart.setData(data);
     }
 
-    private void populateList() {
+    public void populateList(ArrayList<SensorDataTouple> sensorData) {
 
         list = new ArrayList<HashMap>();
+        HashMap tmp99 = new HashMap();
+        tmp99.put(FIRST_COLUMN,"Sensor");
+        tmp99.put(SECOND_COLUMN, "Avg (24h)");
+        list.add(tmp99);
+        for( SensorDataTouple sample: sensorData )
+        {
+            HashMap tmp = new HashMap();
+            tmp.put(FIRST_COLUMN,String.valueOf(sample.getSensorName()) );
+            tmp.put(SECOND_COLUMN, String.valueOf(sample.getSensorValue()));
+            list.add(tmp);
+        }
+        lview = (ListView) findViewById(R.id.listview);
+        listviewAdapter adapter = new listviewAdapter(this, list);
+        lview.setAdapter(adapter);
 
-        HashMap temp99 = new HashMap();
-        temp99.put(FIRST_COLUMN,"Sensor");
-        temp99.put(SECOND_COLUMN, "Avg (24h)");
-        list.add(temp99);
-        HashMap temp = new HashMap();
-        temp.put(FIRST_COLUMN,"Temperatursensor");
-        temp.put(SECOND_COLUMN, "15");
-        list.add(temp);
-
-        HashMap temp1 = new HashMap();
-        temp1.put(FIRST_COLUMN,"Windsensor");
-        temp1.put(SECOND_COLUMN, "25");
-        list.add(temp1);
-
-        HashMap temp2 = new HashMap();
-        temp2.put(FIRST_COLUMN,"Feuchtesensor");
-        temp2.put(SECOND_COLUMN, "1,4");
-        list.add(temp2);
-
-        HashMap temp3 = new HashMap();
-        temp3.put(FIRST_COLUMN,"Luftdrucksensor");
-        temp3.put(SECOND_COLUMN, "19");
-        list.add(temp3);
-
-        HashMap temp4 = new HashMap();
-        temp4.put(FIRST_COLUMN,"Helligkeitssensor");
-        temp4.put(SECOND_COLUMN, "31");
-        list.add(temp4);
     }
 }

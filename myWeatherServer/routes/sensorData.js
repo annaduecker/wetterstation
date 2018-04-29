@@ -2,33 +2,23 @@ var express = require('express');
 var router = express.Router();
 var Database = require('../helper/database.js');
 var database=new Database();
+var weatherStationHelper = require('../helper/weatherstation.js');
 
 /* POST wetterstation sensorData listing. */
 router.post('/sensordata/add', function(req, res, next) {
-
-  
-  var sensorData=req.body.data;
-  var promises=  sensorData.map(element => {
-    return database.query( 'INSERT INTO `sensor_daten`(`sensorid`, `sensorwert`, `datum`) VALUES (?,?,now())',[element.sensorId,element.sensorValue])
-  .catch(function (e) {
-      res.status(500, {
-          error: e
-      });
-  })
-  })
-  console.log(promises)
-  Promise.all(promises).then(function (data) {
+  let sensorData=req.body.data;
+  weatherStationHelper.insertSensorData(sensorData)
+  .then(function (data) {
     res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(sensorData));
-})
+    res.send("Data inserted successful: "+JSON.stringify(sensorData));
+  })
 });
 
 router.get('/sensor/:sensorid', function(req, res, next) {
-  var sensorId=req.params.sensorid;
-  var fromDate= req.headers.fromdate;
-  var toDate= req.headers.todate;
-
-  database.query( 'SELECT * FROM `sensor_daten` WHERE `sensorid`= ? AND `datum` >= ?',[sensorId,fromDate])
+  let sensorId=req.params.sensorid;
+  let fromDate= req.headers.fromdate;
+  let toDate= req.headers.todate;
+  weatherStationHelper.getSensorDataById(sensorId,fromDate,toDate)
   .then(function (data) {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(data));
@@ -37,9 +27,44 @@ router.get('/sensor/:sensorid', function(req, res, next) {
       res.status(500, {
           error: e
       });
+      res.end(e);
   });
      // Respond with results as JSON
 
 });
+
+router.get('/sensor/:sensorid/calculated/avg', function(req, res, next) {
+  let sensorId=req.params.sensorid;
+  weatherStationHelper.getSensorByIdCalculatedAvg(sensorId)
+  .then(function (data) {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(data));
+  })
+  .catch(function (e) {
+      res.status(500, {
+          error: e
+      });
+      res.end(e);
+  });
+     // Respond with results as JSON
+
+});
+
+router.get('/sensor/calculated/avg', function(req, res, next) {
+  weatherStationHelper.getSensorCalculatedAvg()
+  .then(function (data) {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(data));
+  })
+  .catch(function (e) {
+      res.status(500, {
+          error: e
+      });
+      res.end(e);
+  });
+     // Respond with results as JSON
+
+});
+
 
 module.exports = router;

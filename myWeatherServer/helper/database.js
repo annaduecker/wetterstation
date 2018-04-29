@@ -2,34 +2,38 @@
 
 var mysql = require('mysql');
 var config={
-    host: "51.136.15.163",
+    host: "52.136.229.37",
     user: "root",
     password: "my-secret-pw" ,
     database: "iot",
-    connectionLimit: 10,
+    connectionLimit: 15,
     supportBigNumbers: true
   };
  
   
-  
-//var pool = mysql.createPool();
+
 
 class Database {
     constructor() {
-        this.connection = mysql.createConnection( config );
+        this.pool = mysql.createPool( config );
+
+        
     }
     query( sql, args ) {
         return new Promise( ( resolve, reject ) => {
-            this.connection.query( sql, args, ( err, rows ) => {
+            this.pool.getConnection(function(err, connection) {
+            connection.query( sql, args, ( err, rows ) => {
                 if ( err )
                     return reject( err );
-                resolve( rows );
+                    connection.release()
+                    resolve( rows );
             } );
+        });
         } );
     }
-    close() {
+    close(connection) {
         return new Promise( ( resolve, reject ) => {
-            this.connection.end( err => {
+            connection.release( err => {
                 if ( err )
                     return reject( err );
                 resolve();
