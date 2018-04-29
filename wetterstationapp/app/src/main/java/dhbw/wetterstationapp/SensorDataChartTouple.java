@@ -4,15 +4,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class SensorDataChartTouple extends SensorDataTouple {
 
-    public SensorDataChartTouple(int sensorId, float sensorValue, float timestamp, String sensorName) {
+    public SensorDataChartTouple(int sensorId, float sensorValue, Date timestamp, String sensorName) {
         super(sensorId, sensorValue, timestamp, sensorName);
     }
 
-    public SensorDataChartTouple(int sensorId, float sensorValue, float timestamp) {
+    public SensorDataChartTouple(int sensorId, float sensorValue, Date timestamp) {
         super(sensorId, sensorValue, timestamp);
     }
 
@@ -31,8 +35,16 @@ public class SensorDataChartTouple extends SensorDataTouple {
                 JSONObject obj = (JSONObject) jsonResponse.get(i);
                 int id= Integer.parseInt(obj.getString(JSONTOKEN_SENSORID));
                 float sensorwert= Float.parseFloat(obj.getString(JSONTOKEN_SENSORWERT));
-                float datum=  Float.parseFloat(obj.getString(JSONTOKEN_DATUM));
-                sensorDataList.add(new SensorDataChartTouple(id,sensorwert,datum));
+                String t=obj.getString(JSONTOKEN_DATUM);
+              //  String t = "2018-04-08T09:51:23.000Z";
+                SimpleDateFormat mFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                Date date = null;
+                try {
+                     date = mFormat.parse(t);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                sensorDataList.add(new SensorDataChartTouple(id,sensorwert,date));
             }
         } catch (JSONException e) {
             e.printStackTrace();

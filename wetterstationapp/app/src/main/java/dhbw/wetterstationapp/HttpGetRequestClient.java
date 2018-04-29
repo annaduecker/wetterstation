@@ -20,9 +20,6 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
 
     private HttpURLConnection httpConnection;
     private Object classType;
-    public MainActivity main;
-
-
 
     @Override
     protected String doInBackground(String... params) {
@@ -92,20 +89,16 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
 
     @Override
     protected void onPostExecute(String body) {
-//Class<?> classType = Class.forName(className);
-        String test=SensorDataCalculatedTouple.class.getName();
-                if ( classType == SensorDataCalculatedTouple.class.getName()) {
-                    main.populateList(SensorDataCalculatedTouple.prepareData(body));
+        if ( classType == SensorDataCalculatedTouple.class.getName()) {
+                    MainActivity.getInstance().populateList(SensorDataCalculatedTouple.prepareData(body));
                 }
                 else if(classType == SensorDataChartTouple.class.getName() ){
-                    main.populateList(SensorDataChartTouple.prepareData(body));
+                    MainActivity.getInstance().setGraphData(SensorDataChartTouple.prepareData(body));
                 }
 
 
         Log.d("State",body);
     }
-    public void setMain(MainActivity main) {
-        this.main = main;
-    }
+
 
 }

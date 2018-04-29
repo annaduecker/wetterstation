@@ -1,19 +1,22 @@
 package dhbw.wetterstationapp;
 
-import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
-import android.support.v4.content.ContextCompat;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.ConsoleMessage;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -35,38 +38,46 @@ import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
+import java.util.TimeZone;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
+
+import static dhbw.wetterstationapp.Constant.LISTVIEW_DATE;
+import static dhbw.wetterstationapp.Constant.LISTVIEW_SENSORID;
+import static dhbw.wetterstationapp.Constant.LISTVIEW_SENSORNAME;
+import static dhbw.wetterstationapp.Constant.LISTVIEW_VALUE;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String FIRST_COLUMN = "First";
-    public static final String SECOND_COLUMN = "Second";
-    public static final String THIRD_COLUMN = "Third";
-    public static final String FOURTH_COLUMN = "Fourth";
     private LineChart chart;
     private BarChart bChart;
     private  static ArrayList<HashMap> list;
     public  ListView lview;
     private GraphView graph;
+    private TextView graphText;
+    private DrawerLayout mDrawerLayout;
+    private static MainActivity instance;
+
+    private Timer calculatedValueTimer = new Timer();
+    private DataRetrievalTimer calculatedDataRetrievalTimer = new DataRetrievalTimer();
+    private Timer diagramValueTimer = new Timer();
+    private DataRetrievalTimer diagramDataRetrievalTimer = new DataRetrievalTimer();
+    private final String[] CALCULATED_PARAMS = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
+    private final String[] SENOSORDATA_PARAMS = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/",  SensorDataChartTouple.class.getName()};
+
+
+
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -96,51 +107,73 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setInstance(this);
+
+
+
+
+
+        TimeZone tzone = TimeZone.getTimeZone("Europe/Berlin");
+        tzone.setDefault(tzone);
+
         setContentView(R.layout.activity_main);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        graphText = findViewById(R.id.graphText);
+        setSupportActionBar(toolbar);
+        ActionBar actionbar = getSupportActionBar();
+        actionbar.setDisplayHomeAsUpEnabled(true);
+        actionbar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
+        mDrawerLayout = findViewById(R.id.drawer_layout);
 
-        String[] params = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
-        HttpGetRequestClient httpGetRequestClient= new HttpGetRequestClient();
-        httpGetRequestClient.setMain(this);
-        httpGetRequestClient.execute(params);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(
+                new NavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(MenuItem menuItem) {
+                        // set item as selected to persist highlight
+                        menuItem.setChecked(true);
+                        // close drawer when item is tapped
+                        mDrawerLayout.closeDrawers();
+                        switch (menuItem.getItemId()) {
+                            case R.id.nav_refresh:
+                                calculatedValueTimer.cancel();
+                                calculatedValueTimer.purge();
+                                setCalculatedValueTimer(new Timer());
+                                setCalculatedDataRetrievalTimer(new DataRetrievalTimer());
+                                calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
+                                calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 50000); //execute in every 50000 ms
+                                Toast.makeText( getApplicationContext(), getResources().getString(R.string.data_refreshed),Toast.LENGTH_SHORT).show();
+                                break;
+
+                            case R.id.nav_home:
+                                bChart.setVisibility(View.INVISIBLE);
+                                graph.setVisibility(View.INVISIBLE);
+                                chart.setVisibility(View.INVISIBLE);
+                                lview.setVisibility(View.VISIBLE);
+                                graphText.setVisibility(View.INVISIBLE);
+                                getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                             break;
+
+                                // Add code here to update the UI based on the item selected
+                            // For example, swap UI fragments here
+                        }
+                        return true;
+                    }
+                });
+
+        calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
+        calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 50000); //execute in every 50000 ms
 
 
-        Calendar calendar = Calendar.getInstance();
-        Date d1 = calendar.getTime();
-        calendar.add(Calendar.DATE, 1);
-        Date d2 = calendar.getTime();
-        calendar.add(Calendar.DATE, 1);
-        Date d3 = calendar.getTime();
-
-        graph = (GraphView) findViewById(R.id.graph);
 
 // you can directly pass Date objects to DataPoint-Constructor
 // this will convert the Date to double via Date#getTime()
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
-                new DataPoint(d1, 1),
-                new DataPoint(d2, 5),
-                new DataPoint(d3, 3)
-        });
 
-        series.setDrawDataPoints(true);
-        series.setDataPointsRadius(10);
-        series.setThickness(8);
-        graph.addSeries(series);
-
-// set date label formatter
-        graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(this));
-        graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
-
-// set manual x bounds to have nice steps
-        graph.getViewport().setMinX(d1.getTime());
-        graph.getViewport().setMaxX(d3.getTime());
-        graph.getViewport().setXAxisBoundsManual(true);
-
-// as we use dates as labels, the human rounding to nice readable numbers
-// is not necessary
-        graph.getGridLabelRenderer().setHumanRounding(false);
 
 
         //listviewAdapter adapter = new listviewAdapter(this, list);
@@ -172,35 +205,35 @@ public class MainActivity extends AppCompatActivity {
         ArrayList <SensorDataTouple> dataObjects=  new ArrayList<SensorDataTouple>();
         ArrayList <SensorDataTouple> dataObjects2=  new ArrayList<SensorDataTouple>();
 
-        dataObjects.add(new SensorDataTouple (1,75,0));
-        dataObjects.add(new SensorDataTouple (2,85,25200));
-        dataObjects.add(new SensorDataTouple (3,95,61200));
-        dataObjects.add(new SensorDataTouple (4,65,82800));
+        dataObjects.add(new SensorDataTouple (1,75,new Date()));
+        dataObjects.add(new SensorDataTouple (2,85,new Date()));
+        dataObjects.add(new SensorDataTouple (3,95,new Date()));
+        dataObjects.add(new SensorDataTouple (4,65,new Date()));
 
-        dataObjects2.add(new SensorDataTouple (1,15,0));
-        dataObjects2.add(new SensorDataTouple (2,35,25200));
-        dataObjects2.add(new SensorDataTouple (3,45,61200));
-        dataObjects2.add(new SensorDataTouple (4,50,82800));
+        dataObjects2.add(new SensorDataTouple (1,15,new Date()));
+        dataObjects2.add(new SensorDataTouple (2,35,new Date()));
+        dataObjects2.add(new SensorDataTouple (3,45,new Date()));
+        dataObjects2.add(new SensorDataTouple (4,50,new Date()));
         List<Entry> sensorList1 = new ArrayList<Entry>();
         List<Entry> sensorList2 = new ArrayList<Entry>();
         for (SensorDataTouple data : dataObjects) {
             // turn your data into Entry objects
-            sensorList1.add(new Entry(data.getTimestamp(), data.getSensorValue()));
+            sensorList1.add(new Entry(new Float(3), data.getSensorValue()));
         }
         for (SensorDataTouple data : dataObjects2) {
             // turn your data into Entry objects
-            sensorList2.add(new Entry(data.getTimestamp(), data.getSensorValue()));
+            sensorList2.add(new Entry(new Float(5), data.getSensorValue()));
         }
 
         LineDataSet setComp1 = new LineDataSet(sensorList1, "Sensor1 1");
         setComp1.setAxisDependency(YAxis.AxisDependency.LEFT);
         LineDataSet setComp2 = new LineDataSet(sensorList2, "Sensor 2");
         setComp2.setAxisDependency(YAxis.AxisDependency.LEFT);
-        /*dataSet.setColor(Color.parseColor("white"));
-        dataSet.setValueTextColor(Color.parseColor("black")); // styling, ...
-        LineData lineData = new LineData(dataSet);
-        chart.setData(lineData);
-        chart.invalidate(); // refresh*/
+        //dataSet.setColor(Color.parseColor("white"));
+        //dataSet.setValueTextColor(Color.parseColor("black")); // styling, ...
+        //LineData lineData = new LineData(dataSet);
+        //chart.setData(lineData);
+       // chart.invalidate(); // refresh
         List<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
         dataSets.add(setComp1);
         dataSets.add(setComp2);
@@ -299,23 +332,138 @@ public class MainActivity extends AppCompatActivity {
         chart.setData(data);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                mDrawerLayout.openDrawer(GravityCompat.START);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void setGraphData(ArrayList<SensorDataTouple> sensorData){
+
+        DataPoint[] values = new DataPoint[sensorData.size()];
+        for (int i=0; i<sensorData.size(); i++) {
+            DataPoint v = new DataPoint(sensorData.get(i).getTimestamp(), sensorData.get(i).getSensorValue());
+
+            values[i] = v;
+        }
+       LineGraphSeries<DataPoint> series = new LineGraphSeries<>(values);
+
+        graph = (GraphView) findViewById(R.id.graph);
+
+        series.setDrawDataPoints(true);
+        series.setDataPointsRadius(10);
+        series.setThickness(8);
+        graph.removeAllSeries();
+        graph.addSeries(series);
+
+// set date label formatter
+        graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(this,new SimpleDateFormat("dd MMM HH:mm")));
+        graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
+
+// set manual x bounds to have nice steps
+        graph.getViewport().setMinX(sensorData.get(0).getTimestamp().getTime());
+        graph.getViewport().setMaxX(sensorData.get(2).getTimestamp().getTime());
+        graph.getViewport().setXAxisBoundsManual(true);
+
+// as we use dates as labels, the human rounding to nice readable numbers
+// is not necessary
+        graph.getGridLabelRenderer().setHumanRounding(false);
+
+        //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+    }
+
     public void populateList(ArrayList<SensorDataTouple> sensorData) {
 
         list = new ArrayList<HashMap>();
-        HashMap tmp99 = new HashMap();
-        tmp99.put(FIRST_COLUMN,"Sensor");
-        tmp99.put(SECOND_COLUMN, "Avg (24h)");
-        list.add(tmp99);
+
+
+        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
+
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
+        Date currentDate = calendar.getTime();
+        String time= formatter.format(currentDate);
+
         for( SensorDataTouple sample: sensorData )
         {
             HashMap tmp = new HashMap();
-            tmp.put(FIRST_COLUMN,String.valueOf(sample.getSensorName()) );
-            tmp.put(SECOND_COLUMN, String.valueOf(sample.getSensorValue()));
+            tmp.put(LISTVIEW_SENSORNAME,String.valueOf(sample.getSensorName()) );
+            tmp.put(LISTVIEW_VALUE, String.valueOf(sample.getSensorValue()));
+            tmp.put(LISTVIEW_SENSORID, String.valueOf(sample.getSensorId()));
+            tmp.put(LISTVIEW_DATE,time);
             list.add(tmp);
         }
-        lview = (ListView) findViewById(R.id.listview);
-        listviewAdapter adapter = new listviewAdapter(this, list);
-        lview.setAdapter(adapter);
 
+        listviewAdapter adapter = new listviewAdapter(this, list);
+        lview = (ListView) findViewById(R.id.listview);
+        lview.setAdapter(adapter);
+        lview.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                HashMap map= (HashMap) lview.getItemAtPosition(position);
+                int item= Integer.parseInt(String.valueOf(map.get(LISTVIEW_SENSORID)));
+                graphText = findViewById(R.id.graphText);
+                graph = findViewById(R.id.graph);
+                diagramValueTimer.cancel();
+                diagramValueTimer.purge();
+                setDiagramValueTimer(new Timer());
+                setDiagramDataRetrievalTimer(new DataRetrievalTimer());
+                String[] param = getSENOSORDATA_PARAMS();
+                getDiagramDataRetrievalTimer().setParams(new String[]{param[0]+item, param[1]});
+                getDiagramValueTimer().schedule(getDiagramDataRetrievalTimer(), 0, 150000); //execute in every 50000 ms
+                graph.setVisibility(View.VISIBLE);
+                lview.setVisibility(View.INVISIBLE);
+                graphText.setVisibility(View.VISIBLE);
+                graphText.setText(R.string.graphText);
+                graphText.setText(graphText.getText()+": "+map.get(LISTVIEW_SENSORNAME)+ "  AVG:"+ map.get(LISTVIEW_VALUE));
+                Toast.makeText(getInstance(),"You selected : " + map.get(LISTVIEW_SENSORNAME),Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    }
+    public Timer getCalculatedValueTimer() {
+        return calculatedValueTimer;
+    }
+
+    public void setCalculatedValueTimer(Timer calculatedValueTimer) {
+        this.calculatedValueTimer = calculatedValueTimer;
+    }
+    public DataRetrievalTimer getCalculatedDataRetrievalTimer() {
+        return calculatedDataRetrievalTimer;
+    }
+
+    public void setCalculatedDataRetrievalTimer(DataRetrievalTimer calculatedDataRetrievalTimer) {
+        this.calculatedDataRetrievalTimer = calculatedDataRetrievalTimer;
+    }
+
+    public static MainActivity getInstance() {
+        return instance;
+    }
+
+    private static void setInstance(MainActivity instance) {
+        MainActivity.instance = instance;
+    }
+
+    public Timer getDiagramValueTimer() {
+        return diagramValueTimer;
+    }
+
+    public void setDiagramValueTimer(Timer diagramValueTimer) {
+        this.diagramValueTimer = diagramValueTimer;
+    }
+
+    public DataRetrievalTimer getDiagramDataRetrievalTimer() {
+        return diagramDataRetrievalTimer;
+    }
+
+    public void setDiagramDataRetrievalTimer(DataRetrievalTimer diagramDataRetrievalTimer) {
+        this.diagramDataRetrievalTimer = diagramDataRetrievalTimer;
+    }
+
+    public String[] getSENOSORDATA_PARAMS() {
+        return SENOSORDATA_PARAMS;
     }
 }

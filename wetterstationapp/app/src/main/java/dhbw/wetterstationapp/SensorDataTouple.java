@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class SensorDataTouple {
 
@@ -27,10 +28,10 @@ public class SensorDataTouple {
 
     int sensorId;
     float sensorValue;
-    float timestamp;
+    Date timestamp;
     String sensorName;
 
-    public SensorDataTouple(int sensorId, float sensorValue, float timestamp, String sensorName) {
+    public SensorDataTouple(int sensorId, float sensorValue, Date timestamp, String sensorName) {
         this.sensorId = sensorId;
         this.sensorValue = sensorValue;
         this.timestamp = timestamp;
@@ -43,7 +44,7 @@ public class SensorDataTouple {
         this.sensorName = sensorName;
     }
 
-    public SensorDataTouple(int sensorId, float sensorValue, float timestamp) {
+    public SensorDataTouple(int sensorId, float sensorValue, Date timestamp) {
         this.sensorId = sensorId;
         this.sensorValue = sensorValue;
         this.timestamp = timestamp;
@@ -68,7 +69,7 @@ public class SensorDataTouple {
                 JSONObject obj = (JSONObject) jsonResponse.get(i);
                 int id= Integer.parseInt(obj.getString(JSONTOKEN_SENSORID));
                 float sensorwert= Float.parseFloat(obj.getString(JSONTOKEN_SENSORWERT));
-                float datum=  Float.parseFloat(obj.getString(JSONTOKEN_DATUM));
+                Date datum=  null;
                 sensorDataList.add(new SensorDataTouple(id,sensorwert,datum));
             }
         } catch (JSONException e) {
@@ -77,11 +78,11 @@ public class SensorDataTouple {
         return sensorDataList;
     }
 
-    public float getTimestamp() {
+    public Date getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(float timestamp) {
+    public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
     }
 
