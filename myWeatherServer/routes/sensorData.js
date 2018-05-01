@@ -15,7 +15,7 @@ router.post('/sensordata/add', function (req, res, next) {
     promises.push(debugHelper.loggerDatalogger(sensorData));
    
      Promise.all(promises);
-     sensorData= JSON.parse(sensorData.data);
+     sensorData= JSON.parse(sensorData);
      sensorData= sensorData.data;
     weatherStationHelper.insertSensorData(sensorData)
         .then(function (data) {
