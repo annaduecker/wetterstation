@@ -19,9 +19,8 @@ router.post('/sensordata/add', function (req, res, next) {
     weatherStationHelper.insertSensorData(sensorData)
         .then(function (data) {
             return new Promise((resolve, reject) => {
-                res.setHeader('Content-Type', 'application/json');
                 res.status(201);
-                res.end();
+                res.end("successfull");
                 resolve(data);
               })
         })
