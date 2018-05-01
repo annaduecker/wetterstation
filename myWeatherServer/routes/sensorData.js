@@ -8,15 +8,14 @@ var weatherStationHelper = require('../helper/weatherstation.js');
 
 /* POST wetterstation sensorData listing. */
 router.post('/sensordata/add', function (req, res, next) {
-    let sensorData = req.body;
-    
+    let sensorData = req.body.data;
     var promises = [];
     promises.push(debugHelper.logger(req));
     promises.push(debugHelper.loggerDatalogger(sensorData));
    
      Promise.all(promises);
-     sensorData= JSON.parse(sensorData);
-     sensorData= sensorData.data;
+     //sensorData= JSON.parse(sensorData);
+     
     weatherStationHelper.insertSensorData(sensorData)
         .then(function (data) {
             return new Promise((resolve, reject) => {
