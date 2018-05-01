@@ -66,7 +66,7 @@ module.exports = {
         query = 'SELECT * FROM `sensor_daten` WHERE `sensorid`= ? AND `datum` >= ?  AND `datum` <= ?';
       }
       else if (!isNaN(sensorId)) {
-        query = 'SELECT * FROM `sensor_daten` WHERE `sensorid`= ?';
+        query = 'SELECT * FROM `sensor_daten` WHERE `sensorid`= ? ORDER BY  datum DESC LIMIT 3';
       }else {
         reject(errorMessageStatement);
         return;
