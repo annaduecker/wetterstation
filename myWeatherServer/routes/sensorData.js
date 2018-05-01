@@ -14,7 +14,7 @@ router.post('/sensordata/add', function (req, res, next) {
             return new Promise((resolve, reject) => {
                 res.setHeader('Content-Type', 'application/json');
                 res.status(201);
-                 res.send("Data inserted successful");
+                res.end();
                 resolve(data);
               })
         })
