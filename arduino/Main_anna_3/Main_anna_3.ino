@@ -8,26 +8,36 @@
 #include <WiFiEsp.h> // Header von WiFiEsp einbinden
 #include "SoftwareSerial.h"
 
-#define SEALEVELPRESSURE_HPA (1013.25)
+#define SEALEVELPRESSURE_HPA (1013.25) // INIT PRESSURE FOR SENSOR
 
-SoftwareSerial Serial1(6,7); // Virtuelles RX, TX für WLAN-Modul
+//#define ESP_RX   19
+//#define ESP_TX   18
+//SoftwareSerial Serial1(ESP_RX, ESP_TX); // Virtuelles RX, TX für WLAN-Modul
 
 #define MAX_CTR 8 //even numbers
 #define MAX_JSON_CTR 15 //mit 2 multipliziert = Sekunden, bevor json erneut gesendet wird
-#define RAIN A0
-#define SUN A1
-#define LED 13
-#define PIEZO 10
-#define SUMM 500
-#define RECV_PIN 11  //  Der Kontakt der am Infrarotsensor die Daten ausgibt, wird mit Pin 11 des Arduinoboards verbunden.
-#define CRITICAL_RAIN 80
-#define CRITICAL_WIND 10
-#define SUNNY 50
+#define RAIN A0 // RAIN PIN
+#define SUN A1 // SUN PIN
+#define LED 13 // LED for Markise
+#define PIEZO 7 // TON für Thresholds
+#define SUMM 750 // TIME to 
+#define RECV_PIN 11  //  Der Kontakt der am Infrarotsensor (Fernbedienung) die Daten ausgibt, wird mit Pin 11 des Arduinoboards verbunden.
+#define CRITICAL_RAIN 10//80 // Threshold WIND MAX
+#define RAIN_THRESHOLD_MIN 2 // Threshold RAIN MIN
+#define SUN_THRESHOLD_MAX 50   // Threshold SUN  MAX
+#define SUN_THRESHOLD_MIN 15// Threshold SUN  MIN
+#define CRITICAL_WIND 10  // Threshold  WIND MIN
+#define MIN_WIND 1.00f
+const byte MY_ADDRESS = 42;
 
+
+bool MARKISE = false;
+bool MARKISE_AUTOMATION= true;
+ 
 //Infrarot Variablen
 IRrecv irrecv(RECV_PIN);   // An dieser Stelle wird ein Objekt definiert, dass den Infrarotsensor an Pin 11 ausliest.
 decode_results results;  // Dieser Befehl sorgt dafür, dass die Daten, die per Infrarot eingelesen werden unter „results“ abgespeichert werden.
-int IR_counter = 0;
+//int IR_counter = 0;
 bool LED_State = false; //Shows, if LED is on or off
 
 //WLAN Variablen
@@ -37,7 +47,7 @@ int status = WL_IDLE_STATUS;
 const char server[] = "wetterstation.westeurope.cloudapp.azure.com";
 WiFiEspClient client;
 
-//Tx20 Variablen
+//Tx20 Variablen Windsensor
 unsigned int icr1;
 volatile int rx=0;
 volatile int bitcount=0;
@@ -46,8 +56,9 @@ volatile unsigned char sa,sb,sd,se;
 volatile unsigned int sc,sf;
 
 //Variablen für ausgelesene Daten
-String windDir = "";
-int windSpeed = 0;
+String windDir = ""; // INIT for Wind direction
+int windDirInt = 0; // INIT for Wind direction
+float windSpeed = 0; // INIT for wind speed
 /*byte sun, rain;
 int temp = 0;
 int pressure = 0;
@@ -76,12 +87,11 @@ void setup() {
   delay(100); //boot of sensor
 
   init_WLAN();
-  
-  pinMode(2, INPUT);  //Wind
+
   pinMode(RAIN, INPUT);
   pinMode(SUN, INPUT);
   pinMode(LED,OUTPUT);
-  //pinMode(PIEZO,OUTPUT);
+  pinMode(PIEZO,OUTPUT);
 
   irrecv.enableIRIn();   //Dieser Befehl initialisiert den Infrarotempfänger.
 
@@ -99,7 +109,14 @@ void setup() {
   TCCR1A = 0;     // set entire TCCR1A register to 0
   TCCR1B = 0;     // same for TCCR1B
   OCR1A = icr1;
+
+ Wire.begin (MY_ADDRESS);
+  Wire.onReceive (receiveEvent);
 }
+
+volatile boolean haveData = false;
+volatile int X;
+volatile float Y;
 
 void init_WLAN()
 {
@@ -135,6 +152,17 @@ void init_WLAN()
 
 void loop()
 {
+
+ if (haveData)
+  {
+windDir=getWindDirection(X);
+ windSpeed=Y;   
+ windDirInt=X;
+    haveData = false;  
+  }  // end if haveData
+
+
+  
   IR_LED ();
   check_weather_critical();
   if(millis() - timer >= 2000)  //Wenn 2 Sekunden seit letztem Auslesen der Sensoren vergangen sind:
@@ -150,15 +178,15 @@ void Sensor_loop()  //every 2 seconds
   read_sun();
   read_temp();*/
 
-  if(read_sun() >= SUNNY)  //Wenn sonnig (check alle 2 Sekunden, da nicht zeitkritisch)
-  {
-    //piepsen
-    digitalWrite(PIEZO,HIGH);
-    delay(SUMM);
-    digitalWrite(PIEZO,LOW);
-    
-    LED_on_off(true); //LED an, Markise ausfahren
+ if(read_sun() >= SUN_THRESHOLD_MAX)  //Wenn sonnig (check alle 2 Sekunden, da nicht zeitkritisch)
+ {
+    Serial.println("SUN threshold MAX");
+    LED_on_off(true,false); //LED an, Markise ausfahren
   }
+  else if(read_sun() <= SUN_THRESHOLD_MIN){
+    LED_on_off(false,false); //LED aus , Markise ein
+    }
+  
   
   lcd_printData(data_ctr++);
   if(data_ctr == MAX_CTR)
@@ -169,24 +197,43 @@ void Sensor_loop()  //every 2 seconds
   if(sensorLoopCount++ == 0)
   {
     create_Json();
-    //send_Json();
+    delay(5000);
+    send_Json();
   }
   sensorLoopCount = sensorLoopCount % 15;
 
 }
 
+void receiveEvent (int howMany)
+{
+  if (howMany >= (sizeof X) + (sizeof Y))
+  {
+    I2C_readAnything (X);   
+    I2C_readAnything (Y);   
+    haveData = true;     
+  }  
+}
+
 void check_weather_critical ()
 {
-  read_wind();
+
   if(windSpeed >= CRITICAL_WIND || read_rain() >= CRITICAL_RAIN)
-  {
-    //piepsen
-    digitalWrite(PIEZO,HIGH);
-    delay(SUMM);
-    digitalWrite(PIEZO,LOW);
-    
-    LED_on_off(false);  //LED ausschalten (Markise einfahren)
+  {    
+    LED_on_off(false,false);  //LED ausschalten (Markise einfahren)
   }
+}
+
+void playTone(long duration, int freq) {
+    duration *= 1000;
+    int period = (1.0 / freq) * 1000000;
+    long elapsed_time = 0;
+    while (elapsed_time < duration) {
+        digitalWrite(PIEZO,HIGH);
+        delayMicroseconds(period / 2);
+        digitalWrite(PIEZO, LOW);
+        delayMicroseconds(period / 2);
+        elapsed_time += (period);
+    }
 }
 
 void create_Json()
@@ -203,12 +250,13 @@ void create_Json()
   json += "},{\"sensorId\": 5,\"sensorValue\":";
   json += String(read_rain());
   json += "},{\"sensorId\": 6,\"sensorValue\":";
-  json += String(windDir);
+  json += String(windDirInt);
   json += "},{\"sensorId\": 7,\"sensorValue\":";
   json += String(windSpeed);
-  //json += "},{\"sensorId\": 8,\"sensorValue\":"; //noch nicht in json
-  //json += String(altitude);
+  json += "},{\"sensorId\": 8,\"sensorValue\":"; 
+  json += String(read_altitude());
   json += "}]}";
+ Serial.println(json);
 }
 
 
@@ -216,32 +264,58 @@ void IR_LED ()
 {
   if (irrecv.decode(&results))  //Wenn Daten empfangen wurden,
   {    
-    if(IR_counter++ % 2 == 0)
-    {
-      if(results.value == 16753245)
+
+    Serial.println(results.value);
+      if(results.value == 16753245 )
       {
+        playTone(250,500);
+          delay(750);
         LED_State = LED_State ^ 1; // Xor -> Toggeln
-        LED_on_off(LED_State);
+        // if IR_REV is active then turn of MARKISE_AUTOMATION
+        
+        LED_on_off(LED_State,true);
       }
-    }
+      else if( results.value == 16736925 ){
+        playTone(250,500);
+        delay(750);
+       MARKISE_AUTOMATION = MARKISE_AUTOMATION ^ 1; // Xor -> Toggeln
+       if(MARKISE_AUTOMATION){
+           write_LCD(0, "Automation an");
+       }
+           else {
+            write_LCD(0, "Automation aus");
+         }
+        }
+    
     irrecv.resume();  //Der nächste Wert soll vom IR-Empfänger eingelesen werden
   }
 }
 
-void LED_on_off (bool on)
+void LED_on_off (bool statusLED,bool interupt )
 {
-  digitalWrite (LED, on);
-  if(on)
+  
+  if(statusLED && !MARKISE  && (MARKISE_AUTOMATION || interupt)  && read_rain()<= RAIN_THRESHOLD_MIN && windSpeed <= MIN_WIND ) // WENN SONNE
   {
-    //Serial.println("On");
+  playTone(750,750);
     write_LCD(0, "Ausgefahren");
+    digitalWrite (LED, statusLED);
+    MARKISE=true;
+    LED_State=true;
   }
-  else
+  else if(!statusLED && MARKISE)
   {
     //Serial.println("Off");
     write_LCD(0, "Eingefahren");
+      digitalWrite(PIEZO,HIGH);
+     playTone(750,750);
+     digitalWrite (LED, statusLED);
+     MARKISE=false;
+     LED_State=false;
   }
-  delay(2000);
+ // else if(statusLED && !MARKISE_AUTOMATION ){
+ //   Serial.println("Ignore SUN");
+ //   }
+ // delay(2000);
 }
 
 void lcd_printData(int count)
@@ -249,13 +323,12 @@ void lcd_printData(int count)
   if(count < 2)
   {
     //wind anzeigen
-    read_wind();
     write_LCD(0,"Winddir: "+windDir);
     write_LCD(1,"WindSpeed: "+String(windSpeed));
     Serial.print("Dir: "+windDir);
     Serial.println("\tSpeed: "+String(windSpeed));
   }
-  else if(count < 4)
+  else if(count <4)
   {
     byte rain = read_rain();
     byte sun = read_sun();
@@ -324,24 +397,9 @@ byte read_rain(){
 byte read_sun(){
   return map(analogRead(SUN),0,1023,0,100);
 }
- 
-void read_wind(){
-  
 
-  
-  char a[90];
-  unsigned char chk;
- 
-  // Main code loop
-  // TODO: Put your regular (non-ISR) logic here
- 
-  if (rx){
-    chk= ( sb + (sc&0xf) + ((sc>>4)&0xf) + ((sc>>8)&0xf) );chk&=0xf;
-    if (sa==4 && sb==se && sc==sf && sd==chk){      
-      //sprintf (a,"%d\t%d\n",sb,sc);
-      //Serial.write (a);
-      
-      switch(sb)
+String getWindDirection(int sb){
+  switch(sb)
       {
         case 0: windDir = "N"; break;
         case 1: windDir = "NNE"; break;
@@ -360,25 +418,16 @@ void read_wind(){
         case 14: windDir = "NW"; break;
         case 15: windDir = "NNW"; break;
       }
-      windSpeed = sc/10.0;
+      return windDir;
     }
-    else
-    {
-      //Serial.print("Shit received:");
-      sprintf (a,"%d\t%d\n",sb,sc);
-      Serial.write (a);
-    }
-    rx=0;
-  }
- 
-}
+  
 
 void send_Json()
 {
-  //Serial.println("Starting connection to server...");
+  Serial.println("Starting connection to server...");
   // if you get a connection, report back via serial
   if (client.connect(server, 3000)) {
-    write_LCD(0,"Connected to Server");
+   
     // Make a HTTP request
     client.println("POST /weatherStationServer/sensordata/add HTTP/1.1");
     client.println("Host: wetterstation.westeurope.cloudapp.azure.com");
@@ -389,16 +438,15 @@ void send_Json()
     client.println(json);
     while(!client.available());
     while (client.available()) {
-      write_LCD(0,"Data received");
-    char c = client.read();
+    Serial.println(client.read());
     }
-
+ client.stop();
   // if the server's disconnected, stop the client
-  if (!client.connected()) {
+ /* if (!client.connected()) {
     Serial.println();
     Serial.println("Disconnecting from server...");
     client.stop();
-  }
+  }*/
   }
 }
 ///////////////////////////////////////////////////////////
@@ -499,3 +547,18 @@ ISR(TIMER1_COMPA_vect){
     }
   } 
 }
+
+template <typename T> unsigned int I2C_writeAnything (const T& value)
+  {
+  Wire.write((byte *) &value, sizeof (value));
+  return sizeof (value);
+  }  // end of I2C_writeAnything
+
+template <typename T> unsigned int I2C_readAnything(T& value)
+  {
+    byte * p = (byte*) &value;
+    unsigned int i;
+    for (i = 0; i < sizeof value; i++)
+          *p++ = Wire.read();
+    return i;
+  }  // end of I2C_readAnything
