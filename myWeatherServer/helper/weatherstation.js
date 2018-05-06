@@ -5,7 +5,7 @@ let database = new Database();
 module.exports = {
   getSensorCalculatedAvg: function () {
     return new Promise((resolve, reject) => {
-      let query = 'SELECT * FROM `v_sensor_durchschnitt`';
+      let query = 'SELECT * FROM `v_sensor_durchschnitt` WHERE datum=Date(now())';
       resolve(database.query(query));
     })
   },
