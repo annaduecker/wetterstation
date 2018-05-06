@@ -84,9 +84,29 @@ public class listviewAdapter extends BaseAdapter
         holder.txtDate.setText(map.get(LISTVIEW_DATE));
 
         if(Integer.parseInt(map.get(LISTVIEW_SENSORID))==1){
+            holder.imageView.setBackgroundResource(R.drawable.ic_temperature);
+        }
+        else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==2){
+            holder.imageView.setBackgroundResource(R.drawable.ic_weather);
+        }
+        else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==3){
+            holder.imageView.setBackgroundResource(R.drawable.ic_indicator);
+        }
+        else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==4){
             holder.imageView.setBackgroundResource(R.drawable.ic_wb_sunny_black_24dp);
         }
         else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==5){
+            holder.imageView.setBackgroundResource(R.drawable.ic_rain);
+        }
+        else if(Integer.parseInt(map.get(LISTVIEW_SENSORID))==6){
+
+            holder.txtValue.setText( getWindDirection(Math.round((Float.parseFloat(map.get(LISTVIEW_VALUE))))));
+            holder.imageView.setBackgroundResource(R.drawable.ic_compass);
+        }
+        else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==7){
+            holder.imageView.setBackgroundResource(R.drawable.ic_cloud_queue_black_24dp);
+        }
+        else if (Integer.parseInt(map.get(LISTVIEW_SENSORID))==8){
             holder.imageView.setBackgroundResource(R.drawable.ic_cloud_queue_black_24dp);
         }
         else{
@@ -95,5 +115,31 @@ public class listviewAdapter extends BaseAdapter
 
         return convertView;
     }
+
+    private static String  getWindDirection(int sb){
+        String windDir="";
+    switch(sb)
+    {
+        case 0: windDir = "N"; break;
+        case 1: windDir = "NNE"; break;
+        case 2: windDir = "NE"; break;
+        case 3: windDir = "ENE"; break;
+        case 4: windDir = "E"; break;
+        case 5: windDir = "ESE"; break;
+        case 6: windDir = "SE"; break;
+        case 7: windDir = "SSE"; break;
+        case 8: windDir = "S"; break;
+        case 9: windDir = "SSW"; break;
+        case 10: windDir = "SW"; break;
+        case 11: windDir = "WSW"; break;
+        case 12: windDir = "W"; break;
+        case 13: windDir = "WNW"; break;
+        case 14: windDir = "NW"; break;
+        case 15: windDir = "NNW"; break;
+        default: windDir="Not valid data";
+    }
+    return windDir;
+}
+
 
 }

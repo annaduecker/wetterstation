@@ -3,6 +3,7 @@ package dhbw.wetterstationapp;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -89,6 +90,9 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
 
     @Override
     protected void onPostExecute(String body) {
+        try {
+
+
         if ( classType == SensorDataCalculatedTouple.class.getName()) {
                     MainActivity.getInstance().populateList(SensorDataCalculatedTouple.prepareData(body));
                 }
@@ -98,6 +102,11 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
 
 
         Log.d("State",body);
+        }
+        catch (Exception e){
+            Toast.makeText( MainActivity.getInstance(),"Fehler in der Kommunikation mit dem Server.",Toast.LENGTH_SHORT).show();
+
+        }
     }
 
 

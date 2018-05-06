@@ -20,7 +20,7 @@ router.post('/sensordata/add', function (req, res, next) {
         .then(function (data) {
             return new Promise((resolve, reject) => {
                 res.status(201);
-                res.end("successfull");
+                res.end();
                 resolve(data);
               })
         })

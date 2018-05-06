@@ -39,6 +39,8 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 
+import org.w3c.dom.Text;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -73,8 +75,8 @@ public class MainActivity extends AppCompatActivity {
     private DataRetrievalTimer calculatedDataRetrievalTimer = new DataRetrievalTimer();
     private Timer diagramValueTimer = new Timer();
     private DataRetrievalTimer diagramDataRetrievalTimer = new DataRetrievalTimer();
-    private final String[] CALCULATED_PARAMS = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
-    private final String[] SENOSORDATA_PARAMS = new String[]{"http://192.168.0.87:3000/weatherStationServer/sensor/",  SensorDataChartTouple.class.getName()};
+    private final String[] CALCULATED_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
+    private final String[] SENOSORDATA_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/",  SensorDataChartTouple.class.getName()};
 
 
 
@@ -123,6 +125,10 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
+
+        TextView dateToday= findViewById(R.id.dateToday);
+        TextView emptyList= findViewById(R.id.emptyList);
+        dateToday.setText( dateToday.getText()+" "+getDate());
         graphText = findViewById(R.id.graphText);
         setSupportActionBar(toolbar);
         ActionBar actionbar = getSupportActionBar();
@@ -139,6 +145,10 @@ public class MainActivity extends AppCompatActivity {
                         menuItem.setChecked(true);
                         // close drawer when item is tapped
                         mDrawerLayout.closeDrawers();
+
+                        try {
+
+
                         switch (menuItem.getItemId()) {
                             case R.id.nav_refresh:
                                 calculatedValueTimer.cancel();
@@ -161,6 +171,10 @@ public class MainActivity extends AppCompatActivity {
 
                                 // Add code here to update the UI based on the item selected
                             // For example, swap UI fragments here
+                        }
+                        }
+                        catch (Exception e){
+
                         }
                         return true;
                     }
@@ -288,6 +302,10 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        lview = (ListView) findViewById(R.id.listview);
+        if(lview.getAdapter() == null){
+            emptyList.setVisibility(View.VISIBLE);
+        }
     }
     private void setData(int count, float range) {
 
@@ -330,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
 
         // set data
         chart.setData(data);
+
     }
 
     @Override
@@ -376,16 +395,20 @@ public class MainActivity extends AppCompatActivity {
         //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
 
+    private String getDate(){
+        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
+
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
+        Date currentDate = calendar.getTime();
+        return formatter.format(currentDate);
+    }
+
     public void populateList(ArrayList<SensorDataTouple> sensorData) {
 
         list = new ArrayList<HashMap>();
 
 
-        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
 
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
-        Date currentDate = calendar.getTime();
-        String time= formatter.format(currentDate);
 
         for( SensorDataTouple sample: sensorData )
         {
@@ -393,7 +416,7 @@ public class MainActivity extends AppCompatActivity {
             tmp.put(LISTVIEW_SENSORNAME,String.valueOf(sample.getSensorName()) );
             tmp.put(LISTVIEW_VALUE, String.valueOf(sample.getSensorValue()));
             tmp.put(LISTVIEW_SENSORID, String.valueOf(sample.getSensorId()));
-            tmp.put(LISTVIEW_DATE,time);
+            tmp.put(LISTVIEW_DATE,getDate());
             list.add(tmp);
         }
 
@@ -403,7 +426,11 @@ public class MainActivity extends AppCompatActivity {
         lview.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 HashMap map= (HashMap) lview.getItemAtPosition(position);
+                if(Integer.parseInt(String.valueOf(map.get(LISTVIEW_SENSORID)))==6){
+                    return;
+                }
                 int item= Integer.parseInt(String.valueOf(map.get(LISTVIEW_SENSORID)));
                 graphText = findViewById(R.id.graphText);
                 graph = findViewById(R.id.graph);

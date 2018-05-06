@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">My weather station</string>
+    <string name="app_name">Wetterstation</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
@@ -8,4 +8,6 @@
     <string name="data_refreshed">The data has been refreshed</string>
     <string name="diagram">Diagram</string>
     <string name="graphText">Line Graph</string>
+    <string name="dateToday">Heute ist der </string>
+    <string name="emptyList">Momentan sind keine Daten verfügbar</string>
 </resources>

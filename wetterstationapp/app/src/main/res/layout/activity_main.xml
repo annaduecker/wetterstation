@@ -19,7 +19,15 @@
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar" />
-
+        <TextView
+            android:id="@+id/dateToday"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/dateToday"
+            android:padding="15dp"
+            android:textSize="16dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginBottom="20dp"/>
         <ListView
             android:id="@+id/listview"
             style="@style/Widget.AppCompat.ListView"
@@ -29,7 +37,17 @@
             android:divider="#000"
             android:dividerHeight="1dp">
         </ListView>
-
+        <TextView
+            android:id="@+id/emptyList"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/emptyList"
+            android:textSize="16dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginBottom="20dp"
+            android:visibility="invisible"
+            android:gravity="center"
+            android:layout_gravity="center"/>
 
         <android.support.design.widget.BottomNavigationView
         android:id="@+id/navigation"
