@@ -6,7 +6,7 @@
 #include <Adafruit_BME280.h>
 #include <IRremote.h>   // Das Programm greift an dieser Stelle auf eine „Library“ zurück. Das erleichtert einem viel Arbeit. Denn das Infrarotlicht wird mit einem Code verschlüsselt gesendet. Um diesen Code selber auszulesen und in passende Werte umzuwandeln, wären sehr viele Zeilen Code erforderlich.
 #include <WiFiEsp.h> // Header von WiFiEsp einbinden
-#include "SoftwareSerial.h"
+
 
 #define SEALEVELPRESSURE_HPA (1013.25) // INIT PRESSURE FOR SENSOR
 
@@ -28,6 +28,8 @@
 #define SUN_THRESHOLD_MIN 15// Threshold SUN  MIN
 #define CRITICAL_WIND 10  // Threshold  WIND MIN
 #define MIN_WIND 1.00f
+#define _ESPLOGLEVEL_ 4
+
 const byte MY_ADDRESS = 42;
 
 
@@ -55,6 +57,11 @@ volatile char pin;
 volatile unsigned char sa,sb,sd,se;
 volatile unsigned int sc,sf;
 
+
+unsigned long lastConnectionTime = 0;         // last time you connected to the server, in milliseconds
+
+const unsigned long postingInterval = 10000L; // delay between updates, in millisecond
+
 //Variablen für ausgelesene Daten
 String windDir = ""; // INIT for Wind direction
 int windDirInt = 0; // INIT for Wind direction
@@ -81,7 +88,7 @@ void setup() {
 // Initialize the digital pin as an output.
 // Pin 13 has an LED connected on most Arduino boards
   Serial.begin(9600);
-  //Serial1.begin(9600); // Zweiter serieller Port verbunden mit ESP8266
+  Serial1.begin(9600); // Zweiter serieller Port verbunden mit ESP8266
   lcd.begin(16,2);   // initialize the lcd for 16 chars 2 lines, turn on backlight
   bme.begin(0x76); 
   delay(100); //boot of sensor
@@ -121,7 +128,7 @@ volatile float Y;
 void init_WLAN()
 {
   // initialize serial for ESP module
-  Serial1.begin(9600);
+  //Serial1.begin(9600);
   // initialize ESP module
   WiFi.init(&Serial1);
 
@@ -162,13 +169,19 @@ windDir=getWindDirection(X);
   }  // end if haveData
 
 
-  
   IR_LED ();
   check_weather_critical();
   if(millis() - timer >= 2000)  //Wenn 2 Sekunden seit letztem Auslesen der Sensoren vergangen sind:
   {
     timer = millis(); //Timer zurücksetzen
     Sensor_loop();  //Sensor-Funktion ausführen
+  }
+
+  if (millis() - lastConnectionTime > postingInterval) {
+    //Send Json
+
+    create_Json();
+    send_Json();
   }
 }
 
@@ -193,13 +206,7 @@ void Sensor_loop()  //every 2 seconds
   {
     data_ctr = 0;
   }
-  //Send Json
-  if(sensorLoopCount++ == 0)
-  {
-    create_Json();
-    delay(5000);
-    send_Json();
-  }
+
   sensorLoopCount = sensorLoopCount % 15;
 
 }
@@ -424,6 +431,7 @@ String getWindDirection(int sb){
 
 void send_Json()
 {
+  client.stop();
   Serial.println("Starting connection to server...");
   // if you get a connection, report back via serial
   if (client.connect(server, 3000)) {
@@ -434,19 +442,15 @@ void send_Json()
     client.println("Accept: */*");
     client.println("Content-Length: " + String(json.length()));
     client.println("Content-Type: application/json");
+    client.println("Connection: close");
     client.println();
     client.println(json);
-    while(!client.available());
-    while (client.available()) {
-    Serial.println(client.read());
-    }
- client.stop();
-  // if the server's disconnected, stop the client
- /* if (!client.connected()) {
-    Serial.println();
-    Serial.println("Disconnecting from server...");
-    client.stop();
-  }*/
+     lastConnectionTime = millis();
+  }
+  else {
+    // if you couldn't make a connection
+    Serial.println("Connection failed");
+
   }
 }
 ///////////////////////////////////////////////////////////
