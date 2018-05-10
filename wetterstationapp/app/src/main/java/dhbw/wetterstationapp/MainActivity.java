@@ -364,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static Date parseDate(String dateString){
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-YY HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         try {
 
             Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
