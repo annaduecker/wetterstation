@@ -20,7 +20,7 @@ public class SensorDataTouple {
         JSONTOKEN_AVG = "AVG";
         JSONTOKEN_SENSORWERT = "sensorwert";
         JSONTOKEN_DATUM = "datum";
-        JSONTOKEN_SENSORNAME= "sensorname";
+        JSONTOKEN_SENSORNAME= "name";
     }
 
 

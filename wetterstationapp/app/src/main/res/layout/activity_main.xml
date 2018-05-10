@@ -8,7 +8,8 @@
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <FrameLayout
+    <RelativeLayout
+
     android:id="@+id/content_home"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -35,7 +36,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:divider="#000"
-            android:dividerHeight="1dp">
+            android:dividerHeight="1dp"
+            android:layout_below="@id/dateToday">
         </ListView>
         <TextView
             android:id="@+id/emptyList"
@@ -47,25 +49,17 @@
             android:layout_marginBottom="20dp"
             android:visibility="invisible"
             android:gravity="center"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center"
+            android:layout_below="@id/dateToday"/>
 
-        <android.support.design.widget.BottomNavigationView
-        android:id="@+id/navigation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="0dp"
-        android:layout_marginStart="0dp"
-        android:background="?android:attr/windowBackground"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:menu="@menu/navigation" />
+
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/linechart"
             android:layout_width="368dp"
             android:layout_height="439dp"
-            android:visibility="invisible"/>
+            android:visibility="invisible"
+            android:layout_below="@id/dateToday" />
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
@@ -101,7 +95,7 @@
             android:layout_width="368dp"
             android:layout_height="439dp"
             android:visibility="invisible"/>
-    </FrameLayout>
+    </RelativeLayout>
 
     <!-- Container for contents of drawer - use NavigationView to make configuration easier -->
     <android.support.design.widget.NavigationView

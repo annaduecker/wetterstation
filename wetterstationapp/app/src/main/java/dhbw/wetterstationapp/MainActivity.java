@@ -2,6 +2,7 @@ package dhbw.wetterstationapp;
 
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -33,6 +34,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.utils.EntryXComparator;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
@@ -42,10 +44,12 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import org.w3c.dom.Text;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -63,52 +67,20 @@ import static dhbw.wetterstationapp.Constant.LISTVIEW_VALUE;
 public class MainActivity extends AppCompatActivity {
 
     private LineChart chart;
-    private BarChart bChart;
     private  static ArrayList<HashMap> list;
     public  ListView lview;
     private GraphView graph;
     private TextView graphText;
     private DrawerLayout mDrawerLayout;
     private static MainActivity instance;
-
+    private TextView dateToday;
+    private TextView emptyList;
     private Timer calculatedValueTimer = new Timer();
     private DataRetrievalTimer calculatedDataRetrievalTimer = new DataRetrievalTimer();
     private Timer diagramValueTimer = new Timer();
     private DataRetrievalTimer diagramDataRetrievalTimer = new DataRetrievalTimer();
     private final String[] CALCULATED_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
     private final String[] SENOSORDATA_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/",  SensorDataChartTouple.class.getName()};
-
-
-
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    chart.setVisibility(View.INVISIBLE);
-                    bChart.setVisibility(View.INVISIBLE);
-                    graph.setVisibility(View.INVISIBLE);
-                    lview.setVisibility(View.VISIBLE);
-                    return true;
-                case R.id.navigation_dashboard:
-                    chart.setVisibility(View.VISIBLE);
-                    bChart.setVisibility(View.INVISIBLE);
-                    graph.setVisibility(View.INVISIBLE);
-                    lview.setVisibility(View.INVISIBLE);
-                    return true;
-                case R.id.navigation_notifications:
-                    bChart.setVisibility(View.VISIBLE);
-                    chart.setVisibility(View.INVISIBLE);
-                    graph.setVisibility(View.INVISIBLE);
-                    lview.setVisibility(View.INVISIBLE);
-                    return true;
-            }
-            return false;
-        }
-    };
-
 
 
     @Override
@@ -125,10 +97,18 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
+         dateToday= findViewById(R.id.dateToday);
+        TaskScheduler timer = new TaskScheduler();
+        timer.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                dateToday.setText( getResources().getString(R.string.dateToday)+" "+getDate(null));
+            }
+        },7000);
 
-        TextView dateToday= findViewById(R.id.dateToday);
-        TextView emptyList= findViewById(R.id.emptyList);
-        dateToday.setText( dateToday.getText()+" "+getDate());
+
+        emptyList= findViewById(R.id.emptyList);
+
         graphText = findViewById(R.id.graphText);
         setSupportActionBar(toolbar);
         ActionBar actionbar = getSupportActionBar();
@@ -161,16 +141,14 @@ public class MainActivity extends AppCompatActivity {
                                 break;
 
                             case R.id.nav_home:
-                                bChart.setVisibility(View.INVISIBLE);
                                 graph.setVisibility(View.INVISIBLE);
                                 chart.setVisibility(View.INVISIBLE);
                                 lview.setVisibility(View.VISIBLE);
+                                dateToday.setVisibility(View.VISIBLE);
                                 graphText.setVisibility(View.INVISIBLE);
-                                getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                                //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                              break;
 
-                                // Add code here to update the UI based on the item selected
-                            // For example, swap UI fragments here
                         }
                         }
                         catch (Exception e){
@@ -182,152 +160,49 @@ public class MainActivity extends AppCompatActivity {
 
         calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
         calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 50000); //execute in every 50000 ms
-
-
-
-// you can directly pass Date objects to DataPoint-Constructor
-// this will convert the Date to double via Date#getTime()
-
-
-
-        //listviewAdapter adapter = new listviewAdapter(this, list);
-        //lview.setAdapter(adapter);
-
-
-
         chart = (LineChart) findViewById(R.id.linechart);
-        bChart = (BarChart) findViewById(R.id.barchart);
-        List<BarEntry> entries = new ArrayList<>();
-        entries.add(new BarEntry(0f, 30f));
-        entries.add(new BarEntry(1f, 80f));
-        entries.add(new BarEntry(2f, 60f));
-        entries.add(new BarEntry(3f, 50f));
-        // gap of 2f
-        entries.add(new BarEntry(5f, 70f));
-        entries.add(new BarEntry(6f, 60f));
-
-        BarDataSet set = new BarDataSet(entries, "BarDataSet");
-        BarData bData = new BarData(set);
-        bData.setBarWidth(0.9f); // set custom bar width
-        bChart.setData(bData);
-        bChart.setFitBars(true); // make the x-axis fit exactly all bars
-        bChart.invalidate(); // refresh
-
-
-        chart.setVisibility(View.INVISIBLE);
-        bChart.setVisibility(View.INVISIBLE);
-        ArrayList <SensorDataTouple> dataObjects=  new ArrayList<SensorDataTouple>();
-        ArrayList <SensorDataTouple> dataObjects2=  new ArrayList<SensorDataTouple>();
-
-        dataObjects.add(new SensorDataTouple (1,75,new Date()));
-        dataObjects.add(new SensorDataTouple (2,85,new Date()));
-        dataObjects.add(new SensorDataTouple (3,95,new Date()));
-        dataObjects.add(new SensorDataTouple (4,65,new Date()));
-
-        dataObjects2.add(new SensorDataTouple (1,15,new Date()));
-        dataObjects2.add(new SensorDataTouple (2,35,new Date()));
-        dataObjects2.add(new SensorDataTouple (3,45,new Date()));
-        dataObjects2.add(new SensorDataTouple (4,50,new Date()));
-        List<Entry> sensorList1 = new ArrayList<Entry>();
-        List<Entry> sensorList2 = new ArrayList<Entry>();
-        for (SensorDataTouple data : dataObjects) {
-            // turn your data into Entry objects
-            sensorList1.add(new Entry(new Float(3), data.getSensorValue()));
-        }
-        for (SensorDataTouple data : dataObjects2) {
-            // turn your data into Entry objects
-            sensorList2.add(new Entry(new Float(5), data.getSensorValue()));
-        }
-
-        LineDataSet setComp1 = new LineDataSet(sensorList1, "Sensor1 1");
-        setComp1.setAxisDependency(YAxis.AxisDependency.LEFT);
-        LineDataSet setComp2 = new LineDataSet(sensorList2, "Sensor 2");
-        setComp2.setAxisDependency(YAxis.AxisDependency.LEFT);
-        //dataSet.setColor(Color.parseColor("white"));
-        //dataSet.setValueTextColor(Color.parseColor("black")); // styling, ...
-        //LineData lineData = new LineData(dataSet);
-        //chart.setData(lineData);
-       // chart.invalidate(); // refresh
-        List<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-        dataSets.add(setComp1);
-        dataSets.add(setComp2);
-
-
-
-       LineData data = new LineData(dataSets);
-       // chart.setData(data);
-
-        setData(100, 30);
-        chart.invalidate();
-
-        // get the legend (only possible after setting data)
-        Legend l = chart.getLegend();
-        l.setEnabled(false);
-
-        XAxis xAxis = chart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.TOP_INSIDE);
-
-        xAxis.setTextSize(10f);
-        xAxis.setTextColor(Color.WHITE);
-        xAxis.setDrawAxisLine(false);
-        xAxis.setDrawGridLines(true);
-        xAxis.setTextColor(Color.rgb(255, 192, 56));
-        xAxis.setCenterAxisLabels(true);
-        xAxis.setGranularity(1f); // one hour
-        xAxis.setValueFormatter(new IAxisValueFormatter() {
-
-            private SimpleDateFormat mFormat = new SimpleDateFormat("dd MMM HH:mm");
-
-            @Override
-            public String getFormattedValue(float value, AxisBase axis) {
-
-                long millis = TimeUnit.HOURS.toMillis((long) value);
-                return mFormat.format(new Date(millis));
-            }
-        });
-
-        YAxis leftAxis = chart.getAxisLeft();
-        leftAxis.setPosition(YAxis.YAxisLabelPosition.INSIDE_CHART);
-
-        leftAxis.setTextColor(ColorTemplate.getHoloBlue());
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setGranularityEnabled(true);
-        leftAxis.setAxisMinimum(0f);
-        leftAxis.setAxisMaximum(50);
-        leftAxis.setYOffset(-45f);
-        leftAxis.setTextColor(Color.rgb(255, 192, 56));
-
-        YAxis rightAxis = chart.getAxisRight();
-        rightAxis.setEnabled(false);
-
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-        lview = (ListView) findViewById(R.id.listview);
+                lview = (ListView) findViewById(R.id.listview);
         if(lview.getAdapter() == null){
             emptyList.setVisibility(View.VISIBLE);
         }
+
     }
-    private void setData(int count, float range) {
+
+
+    public void setData(ArrayList<SensorDataTouple> sensorData) {
 
         // now in hours
-        long now = TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis());
-
+       // long now = TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis());
+        int count=30;
+        int range=50;
         ArrayList<Entry> values = new ArrayList<Entry>();
 
-        float from = now;
+        //float from = now;
 
         // count = hours
-        float to = now + count;
+        //float to = now + count;
 
         // increment by 1 hour
-        for (float x = from; x < to; x++) {
-
-            Random rn = new Random();
-
-            float y = rn.nextInt((int)range) + 1;
+       /* for (float x = from; x < to; x++) {
+            Random rn=new Random();
+            float y = rn.nextInt(range+1);
             values.add(new Entry(x, y)); // add one entry per hour
+        }*/
+
+        float min=0,max=0;
+        // increment by 1 hour
+        for( SensorDataTouple sample: sensorData )
+        {
+
+            long now = TimeUnit.MILLISECONDS.toHours(sample.getTimestamp().getTime());
+            float x = now;
+            float y=Float.parseFloat(String.valueOf(sample.getSensorValue()));
+            if(max<y)
+                max=y;
+            values.add(new Entry(x,y)); // add one entry per hour
         }
 
+        Collections.sort(values, new EntryXComparator());
         // create a dataset and give it a type
         LineDataSet set1 = new LineDataSet(values, "DataSet 1");
         set1.setAxisDependency(YAxis.AxisDependency.LEFT);
@@ -343,12 +218,52 @@ public class MainActivity extends AppCompatActivity {
 
         // create a data object with the datasets
         LineData data = new LineData(set1);
-        data.setValueTextColor(Color.WHITE);
+        data.setValueTextColor(Color.RED);
         data.setValueTextSize(9f);
 
         // set data
         chart.setData(data);
+        chart.invalidate();
 
+        // get the legend (only possible after setting data)
+        Legend l = chart.getLegend();
+        l.setEnabled(false);
+
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.TOP_INSIDE);
+        xAxis.setTypeface(Typeface.DEFAULT);
+        xAxis.setTextSize(10f);
+        xAxis.setTextColor(Color.WHITE);
+        xAxis.setDrawAxisLine(false);
+        xAxis.setDrawGridLines(true);
+        xAxis.setTextColor(Color.rgb(255, 192, 56));
+        xAxis.setCenterAxisLabels(true);
+        xAxis.setGranularity(1f); // one hour
+        xAxis.setValueFormatter(new IAxisValueFormatter() {
+
+            private SimpleDateFormat mFormat = new SimpleDateFormat("HH:mm");
+
+            @Override
+            public String getFormattedValue(float value, AxisBase axis) {
+
+                long millis = TimeUnit.HOURS.toMillis((long) value);
+                return mFormat.format(new Date(millis));
+            }
+        });
+
+        YAxis leftAxis = chart.getAxisLeft();
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.INSIDE_CHART);
+        leftAxis.setTypeface(Typeface.DEFAULT);
+        leftAxis.setTextColor(ColorTemplate.getHoloBlue());
+        leftAxis.setDrawGridLines(true);
+        leftAxis.setGranularityEnabled(true);
+        leftAxis.setAxisMinimum(0f);
+        leftAxis.setAxisMaximum(max+5);
+        leftAxis.setYOffset(-9f);
+        leftAxis.setTextColor(Color.rgb(255, 192, 56));
+
+        YAxis rightAxis = chart.getAxisRight();
+        rightAxis.setEnabled(false);
     }
 
     @Override
@@ -395,11 +310,33 @@ public class MainActivity extends AppCompatActivity {
         //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
 
-    private String getDate(){
-        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
+    public static Date parseDate(String dateString){
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-YY HH:mm:ss");
+        try {
 
+            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
+            calendar.setTime( formatter.parse(dateString));
+            Date date = calendar.getTime();
+            return  date;
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+
+    }
+
+    private String getDate(Date date){
+        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
+        Date currentDate;
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
-        Date currentDate = calendar.getTime();
+
+        if(date!=null){
+            currentDate = date;
+        }
+        else
+            currentDate = calendar.getTime();
+
         return formatter.format(currentDate);
     }
 
@@ -416,10 +353,10 @@ public class MainActivity extends AppCompatActivity {
             tmp.put(LISTVIEW_SENSORNAME,String.valueOf(sample.getSensorName()) );
             tmp.put(LISTVIEW_VALUE, String.valueOf(sample.getSensorValue()));
             tmp.put(LISTVIEW_SENSORID, String.valueOf(sample.getSensorId()));
-            tmp.put(LISTVIEW_DATE,getDate());
+            tmp.put(LISTVIEW_DATE,getDate(sample.getTimestamp()));
             list.add(tmp);
         }
-
+        emptyList.setVisibility(View.INVISIBLE);
         listviewAdapter adapter = new listviewAdapter(this, list);
         lview = (ListView) findViewById(R.id.listview);
         lview.setAdapter(adapter);
@@ -429,6 +366,7 @@ public class MainActivity extends AppCompatActivity {
 
                 HashMap map= (HashMap) lview.getItemAtPosition(position);
                 if(Integer.parseInt(String.valueOf(map.get(LISTVIEW_SENSORID)))==6){
+                    Toast.makeText( getApplicationContext(), getResources().getString(R.string.windDirection)+" "+listviewAdapter.getWindDirection(Math.round((Float.parseFloat(map.get(LISTVIEW_VALUE).toString())))),Toast.LENGTH_SHORT).show();
                     return;
                 }
                 int item= Integer.parseInt(String.valueOf(map.get(LISTVIEW_SENSORID)));
@@ -441,9 +379,12 @@ public class MainActivity extends AppCompatActivity {
                 String[] param = getSENOSORDATA_PARAMS();
                 getDiagramDataRetrievalTimer().setParams(new String[]{param[0]+item, param[1]});
                 getDiagramValueTimer().schedule(getDiagramDataRetrievalTimer(), 0, 150000); //execute in every 50000 ms
-                graph.setVisibility(View.VISIBLE);
+               // graph.setVisibility(View.VISIBLE);
+                chart.setVisibility(View.VISIBLE);
                 lview.setVisibility(View.INVISIBLE);
                 graphText.setVisibility(View.VISIBLE);
+                emptyList.setVisibility(View.INVISIBLE);
+                dateToday.setVisibility(View.INVISIBLE);
                 graphText.setText(R.string.graphText);
                 graphText.setText(graphText.getText()+": "+map.get(LISTVIEW_SENSORNAME)+ "  AVG:"+ map.get(LISTVIEW_VALUE));
                 Toast.makeText(getInstance(),"You selected : " + map.get(LISTVIEW_SENSORNAME),Toast.LENGTH_SHORT).show();

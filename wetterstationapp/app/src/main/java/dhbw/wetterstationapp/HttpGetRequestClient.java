@@ -25,18 +25,11 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
     @Override
     protected String doInBackground(String... params) {
         try {
-            // Create URL
-          /*  StringBuilder stringBuilder = new StringBuilder(params[0]);
-            Uri.Builder builder = new Uri.Builder()
-                    .appendQueryParameter("fromdate", "2018-04-08 11:51:06")
-                    .appendQueryParameter("todate", "");
-            String query = builder.build().getEncodedQuery();
-            stringBuilder.append("?"+query);*/
-            URL githubEndpoint = new URL(params[0]);
+            URL weatherstationEndpoint = new URL(params[0]);
 
             classType=params[1];
 // Create connection
-            httpConnection = (HttpURLConnection) githubEndpoint.openConnection();
+            httpConnection = (HttpURLConnection) weatherstationEndpoint.openConnection();
             httpConnection.setReadTimeout(10000);
             httpConnection.setConnectTimeout(15000);
 
@@ -91,21 +84,18 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String body) {
         try {
+            if (classType == SensorDataCalculatedTouple.class.getName()) {
+                MainActivity.getInstance().populateList(SensorDataCalculatedTouple.prepareData(body));
+            } else if (classType == SensorDataChartTouple.class.getName()) {
+                MainActivity.getInstance().setGraphData(SensorDataChartTouple.prepareData(body));
+                MainActivity.getInstance().setData(SensorDataChartTouple.prepareData(body));
+            }
 
 
-        if ( classType == SensorDataCalculatedTouple.class.getName()) {
-                    MainActivity.getInstance().populateList(SensorDataCalculatedTouple.prepareData(body));
-                }
-                else if(classType == SensorDataChartTouple.class.getName() ){
-                    MainActivity.getInstance().setGraphData(SensorDataChartTouple.prepareData(body));
-                }
-
-
-        Log.d("State",body);
+            Log.d("State", body);
         }
         catch (Exception e){
-            Toast.makeText( MainActivity.getInstance(),"Fehler in der Kommunikation mit dem Server.",Toast.LENGTH_SHORT).show();
-
+            Toast.makeText( MainActivity.getInstance().getApplicationContext(), MainActivity.getInstance().getResources().getString(R.string.errorWhileLoadingData),Toast.LENGTH_SHORT).show();
         }
     }
 

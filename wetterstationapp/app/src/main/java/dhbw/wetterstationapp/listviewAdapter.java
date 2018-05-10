@@ -116,7 +116,7 @@ public class listviewAdapter extends BaseAdapter
         return convertView;
     }
 
-    private static String  getWindDirection(int sb){
+    public static String  getWindDirection(int sb){
         String windDir="";
     switch(sb)
     {

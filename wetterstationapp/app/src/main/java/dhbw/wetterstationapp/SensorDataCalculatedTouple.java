@@ -5,12 +5,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class SensorDataCalculatedTouple extends SensorDataTouple {
 
 
-    public SensorDataCalculatedTouple(String sensorName, int sensorId, float sensorValue) {
-        super(sensorId, sensorValue,sensorName);
+    public SensorDataCalculatedTouple(String sensorName, int sensorId, float sensorValue, Date date) {
+        super(sensorId, sensorValue,date,sensorName);
     }
 
     public static ArrayList<SensorDataTouple> prepareData(String body) {
@@ -24,7 +25,8 @@ public class SensorDataCalculatedTouple extends SensorDataTouple {
                 int id= Integer.parseInt(obj.getString(JSONTOKEN_SENSORID));
                 float avg= Float.parseFloat(obj.getString(JSONTOKEN_AVG));
                 String name= obj.getString(JSONTOKEN_SENSORNAME);
-                sensorDataList.add(new SensorDataCalculatedTouple(name,id,avg));
+                Date date= null; //MainActivity.parseDate(obj.getString(JSONTOKEN_DATUM));
+                sensorDataList.add(new SensorDataCalculatedTouple(name,id,avg,date));
             }
         } catch (JSONException e) {
             e.printStackTrace();

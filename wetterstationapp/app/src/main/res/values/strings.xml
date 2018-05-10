@@ -4,10 +4,12 @@
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
     <string name="refresh">Refresh</string>
-    <string name="menu_title">Menu</string>
-    <string name="data_refreshed">The data has been refreshed</string>
+    <string name="menu_title"></string>
+    <string name="data_refreshed">Die Sensordaten wurde aktualisiert</string>
     <string name="diagram">Diagram</string>
     <string name="graphText">Line Graph</string>
     <string name="dateToday">Heute ist der </string>
     <string name="emptyList">Momentan sind keine Daten verfügbar</string>
+    <string name="windDirection">Die Windrichtung ist </string>
+    <string name="errorWhileLoadingData">Der Server steht momentan nicht zur Verfügung</string>
 </resources>
