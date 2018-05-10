@@ -46,6 +46,7 @@ import org.w3c.dom.Text;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -334,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getDate(Date date){
-        SimpleDateFormat formatter = new SimpleDateFormat("dd MMM YY HH:mm");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm");
         Date currentDate;
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
 
