@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
         // find MenuItem you want to change
         MenuItem nav_toggle = menu.findItem(R.id.nav_toggle);
-        if(AVG){
+       if(AVG){
             nav_toggle.setTitle(R.string.toggled);
             Toast.makeText( getApplicationContext(), getResources().getString(R.string.toggled),Toast.LENGTH_SHORT).show();
 
@@ -109,6 +109,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         isAVG = AVG;
+        getSensorData(10000);
+
     }
 
     private boolean isAVG=true;
@@ -128,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         timer.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                dateToday.setText( getResources().getString(R.string.dateToday)+" "+getDate(null));
+                dateToday.setText( getResources().getString(R.string.dateToday)+" "+getDate(null,true));
             }
         },7000);
 
@@ -377,8 +379,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private String getDate(Date date){
-        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+    private String getDate(Date date,boolean today){
+        SimpleDateFormat formatter;
+        if(isAVG || today) {
+             formatter = new SimpleDateFormat("dd.MM.yyyy");
+        }
+        else
+             formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
         Date currentDate;
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"));
 
@@ -404,7 +411,7 @@ public class MainActivity extends AppCompatActivity {
             tmp.put(LISTVIEW_SENSORNAME,String.valueOf(sample.getSensorName()) );
             tmp.put(LISTVIEW_VALUE, String.valueOf(sample.getSensorValue()));
             tmp.put(LISTVIEW_SENSORID, String.valueOf(sample.getSensorId()));
-            tmp.put(LISTVIEW_DATE,getDate(sample.getTimestamp()));
+            tmp.put(LISTVIEW_DATE,getDate(sample.getTimestamp(),false));
             list.add(tmp);
         }
         emptyList.setVisibility(View.INVISIBLE);

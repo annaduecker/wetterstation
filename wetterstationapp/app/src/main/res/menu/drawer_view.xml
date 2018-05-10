@@ -13,7 +13,7 @@
         <item
             android:id="@+id/nav_toggle"
             android:icon="@drawable/ic_dashboard_black_24dp"
-            android:title="@string/untoggled">
+            android:title="@string/toggled">
         </item>
     </group>
 </menu>
