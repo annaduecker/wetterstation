@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -191,12 +192,14 @@ public class MainActivity extends AppCompatActivity {
 
         float min=0,max=0;
         // increment by 1 hour
+        String sensorName="";
         for( SensorDataTouple sample: sensorData )
         {
 
             long now = TimeUnit.MILLISECONDS.toHours(sample.getTimestamp().getTime());
             float x = now;
             float y=Float.parseFloat(String.valueOf(sample.getSensorValue()));
+             sensorName=sample.getSensorName();
             if(max<y)
                 max=y;
             values.add(new Entry(x,y)); // add one entry per hour
@@ -209,16 +212,20 @@ public class MainActivity extends AppCompatActivity {
         set1.setColor(ColorTemplate.getHoloBlue());
         set1.setValueTextColor(ColorTemplate.getHoloBlue());
         set1.setLineWidth(1.5f);
-        set1.setDrawCircles(false);
-        set1.setDrawValues(false);
+        set1.setDrawCircles(true);
+        set1.setDrawValues(true);
         set1.setFillAlpha(65);
         set1.setFillColor(ColorTemplate.getHoloBlue());
         set1.setHighLightColor(Color.rgb(244, 117, 117));
         set1.setDrawCircleHole(false);
+        set1.setCircleRadius(3f);
+        set1.setDrawCircleHole(true);
+        //set1.setDrawFilled(true);
+        //set1.setFillAlpha(110);
 
         // create a data object with the datasets
         LineData data = new LineData(set1);
-        data.setValueTextColor(Color.RED);
+        data.setValueTextColor(Color.BLACK);
         data.setValueTextSize(9f);
 
         // set data
@@ -386,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
                 emptyList.setVisibility(View.INVISIBLE);
                 dateToday.setVisibility(View.INVISIBLE);
                 graphText.setText(R.string.graphText);
-                graphText.setText(graphText.getText()+": "+map.get(LISTVIEW_SENSORNAME)+ "  AVG:"+ map.get(LISTVIEW_VALUE));
+                graphText.setText(map.get(LISTVIEW_SENSORNAME)+ "  AVG:"+ map.get(LISTVIEW_VALUE));
                 Toast.makeText(getInstance(),"You selected : " + map.get(LISTVIEW_SENSORNAME),Toast.LENGTH_SHORT).show();
             }
         });
