@@ -8,6 +8,8 @@
     <string name="data_refreshed">Die Sensordaten wurde aktualisiert</string>
     <string name="diagram">Diagram</string>
     <string name="graphText"></string>
+    <string name="toggled">Täglicher Durchschnitt</string>
+    <string name="untoggled">Aktuelle Daten</string>
     <string name="dateToday">Heute ist der </string>
     <string name="emptyList">Momentan sind keine Daten verfügbar</string>
     <string name="windDirection">Die Windrichtung ist </string>

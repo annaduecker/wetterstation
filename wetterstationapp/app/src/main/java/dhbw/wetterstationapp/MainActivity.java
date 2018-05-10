@@ -12,6 +12,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -77,22 +78,45 @@ public class MainActivity extends AppCompatActivity {
     private static MainActivity instance;
     private TextView dateToday;
     private TextView emptyList;
+    private  MenuItem nav_toggle;
     private Timer calculatedValueTimer = new Timer();
     private DataRetrievalTimer calculatedDataRetrievalTimer = new DataRetrievalTimer();
     private Timer diagramValueTimer = new Timer();
     private DataRetrievalTimer diagramDataRetrievalTimer = new DataRetrievalTimer();
     private final String[] CALCULATED_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/calculated/avg",  SensorDataCalculatedTouple.class.getName()};
+    private final String[] SINGLEDATA_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/calculated/avg/last",  SensorDataCalculatedTouple.class.getName()};
     private final String[] SENOSORDATA_PARAMS = new String[]{"http://wetterstation.westeurope.cloudapp.azure.com:3000/weatherStationServer/sensor/",  SensorDataChartTouple.class.getName()};
 
+    public boolean isAVG() {
+        return isAVG;
+    }
+
+    public void setAVG(boolean AVG) {
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        // get menu from navigationView
+        Menu menu = navigationView.getMenu();
+
+        // find MenuItem you want to change
+        MenuItem nav_toggle = menu.findItem(R.id.nav_toggle);
+        if(AVG){
+            nav_toggle.setTitle(R.string.toggled);
+            Toast.makeText( getApplicationContext(), getResources().getString(R.string.toggled),Toast.LENGTH_SHORT).show();
+
+        }
+        else {
+            nav_toggle.setTitle(R.string.untoggled);
+            Toast.makeText( getApplicationContext(), getResources().getString(R.string.untoggled),Toast.LENGTH_SHORT).show();
+        }
+
+        isAVG = AVG;
+    }
+
+    private boolean isAVG=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setInstance(this);
-
-
-
-
 
         TimeZone tzone = TimeZone.getTimeZone("Europe/Berlin");
         tzone.setDefault(tzone);
@@ -119,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
         mDrawerLayout = findViewById(R.id.drawer_layout);
 
         NavigationView navigationView = findViewById(R.id.nav_view);
+
         navigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
@@ -133,12 +158,8 @@ public class MainActivity extends AppCompatActivity {
 
                         switch (menuItem.getItemId()) {
                             case R.id.nav_refresh:
-                                calculatedValueTimer.cancel();
-                                calculatedValueTimer.purge();
-                                setCalculatedValueTimer(new Timer());
-                                setCalculatedDataRetrievalTimer(new DataRetrievalTimer());
-                                calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
-                                calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 50000); //execute in every 50000 ms
+
+                                getSensorData(10000);
                                 Toast.makeText( getApplicationContext(), getResources().getString(R.string.data_refreshed),Toast.LENGTH_SHORT).show();
                                 break;
 
@@ -150,6 +171,11 @@ public class MainActivity extends AppCompatActivity {
                                 graphText.setVisibility(View.INVISIBLE);
                                 //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                              break;
+                            case R.id.nav_toggle:
+                                setAVG(!isAVG());
+
+                                //getInstance().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                                break;
 
                         }
                         }
@@ -160,8 +186,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-        calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
-        calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 50000); //execute in every 50000 ms
+
+
+        getSensorData(15000);
         chart = (LineChart) findViewById(R.id.linechart);
                 lview = (ListView) findViewById(R.id.listview);
         if(lview.getAdapter() == null){
@@ -169,6 +196,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    private void getSensorData(int period){
+        calculatedValueTimer.cancel();
+        calculatedValueTimer.purge();
+        setCalculatedValueTimer(new Timer());
+        setCalculatedDataRetrievalTimer(new DataRetrievalTimer());
+        if(isAVG) {
+            calculatedDataRetrievalTimer.setParams(CALCULATED_PARAMS);
+            calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, 60000); //execute in every 50000 ms
+        }
+        else{
+            calculatedDataRetrievalTimer.setParams(SINGLEDATA_PARAMS);
+            calculatedValueTimer.schedule(calculatedDataRetrievalTimer, 0, period); //execute in every 50000 ms
+        }
+    }
+
 
 
     public void setData(ArrayList<SensorDataTouple> sensorData) {

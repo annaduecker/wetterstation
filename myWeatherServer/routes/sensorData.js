@@ -32,6 +32,54 @@ router.post('/sensordata/add', function (req, res, next) {
         });
 });
 
+
+router.get('/sensor/calculated/avg/last', function (req, res, next) {
+    weatherStationHelper.getSensorCalculatedAvgLast()
+    .then(function (data) {
+        return new Promise((resolve, reject) => {
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data));
+            resolve(data);
+          })
+    })
+    .then(function(data){
+        debugHelper.logger(req);
+        debugHelper.loggerDatalogger(data);
+    })
+        .catch(function (e) {
+            res.status(500, {
+                error: e
+            });
+            res.end(e.endUserMessage);
+        });
+    // Respond with results as JSON
+
+});
+
+router.get('/sensor/calculated/avg', function (req, res, next) {
+    weatherStationHelper.getSensorCalculatedAvg()
+    .then(function (data) {
+        return new Promise((resolve, reject) => {
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data));
+            resolve(data);
+          })
+    })
+    .then(function(data){
+        debugHelper.logger(req);
+        debugHelper.loggerDatalogger(data);
+    })
+        .catch(function (e) {
+            res.status(500, {
+                error: e
+            });
+            res.end(e.endUserMessage);
+        });
+    // Respond with results as JSON
+
+});
+
+
 router.get('/sensor/:sensorid', function (req, res, next) {
     let sensorId = req.params.sensorid;
     let fromDate = req.headers.fromdate;

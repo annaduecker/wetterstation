@@ -56,6 +56,14 @@ module.exports = {
       resolve(database.query(query, [sensorId]));
     })
   },
+
+  getSensorCalculatedAvgLast: function () {
+    return new Promise((resolve, reject) => {
+      let query = 'select m1.sensorid,round(AVG(sensorwert)),datum from sensor_daten as m1  INNER JOIN sensor_configuration as m3 ON m1.sensorid=m3.sensorId where datum = (select max(datum) from sensor_daten as m2 where m1.sensorid = m2.sensorid ) GROUP BY sensorid,datum ORDER BY `m1`.`sensorid` ASC';
+      resolve(database.query(query));
+    })
+  },
+
   getSensorDataById: function (sensorId, fromDate, toDate) {
     return new Promise((resolve, reject) => {
       let query;
