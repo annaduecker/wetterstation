@@ -87,7 +87,7 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
             if (classType == SensorDataCalculatedTouple.class.getName()) {
                 MainActivity.getInstance().populateList(SensorDataCalculatedTouple.prepareData(body));
             } else if (classType == SensorDataChartTouple.class.getName()) {
-                MainActivity.getInstance().setGraphData(SensorDataChartTouple.prepareData(body));
+                //MainActivity.getInstance().setGraphData(SensorDataChartTouple.prepareData(body));
                 MainActivity.getInstance().setData(SensorDataChartTouple.prepareData(body));
             }
 
@@ -95,6 +95,7 @@ public class HttpGetRequestClient extends AsyncTask<String, Void, String> {
             Log.d("State", body);
         }
         catch (Exception e){
+            e.printStackTrace();
             Toast.makeText( MainActivity.getInstance().getApplicationContext(), MainActivity.getInstance().getResources().getString(R.string.errorWhileLoadingData),Toast.LENGTH_SHORT).show();
         }
     }

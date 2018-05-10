@@ -37,7 +37,7 @@ public class SensorDataChartTouple extends SensorDataTouple {
                 float sensorwert= Float.parseFloat(obj.getString(JSONTOKEN_SENSORWERT));
                 String t=obj.getString(JSONTOKEN_DATUM);
               //  String t = "2018-04-08T09:51:23.000Z";
-                SimpleDateFormat mFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                SimpleDateFormat mFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date date = null;
                 try {
                      date = mFormat.parse(t);
