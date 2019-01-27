@@ -1,6 +1,6 @@
 var mysql = require('mysql');
 var config = {
-  host: 'wetterstation.westeurope.cloudapp.azure.com',
+  host: '172.17.0.2',
   user: 'root',
   password: 'my-secret-pw',
   database: 'iot',
